@@ -66,12 +66,6 @@ async function processIssue({
   const matchingLabels: string[] = []
   const comments: string[] = config.comment ? [config.comment] : []
 
-  if (!issue.body) {
-    core.debug(`Issue without body, stopping.`)
-    await writeComment(client, issue.number, `Merci de renseigner le contenu du ticket.`)
-    return
-  }
-
   for (const label of config.labels) {
     if (minimatch(issue.body, label.glob)) {
       matchingLabels.push(label.label)
