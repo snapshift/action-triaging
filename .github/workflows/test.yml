@@ -10,3 +10,5 @@ jobs:
     - uses: actions/checkout@v2
     - name: Create comment
       uses: ./
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}

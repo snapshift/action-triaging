@@ -4,7 +4,7 @@ author: "Arhia"
 inputs:
   repo-token:
     description: 'Token for the repository. Can be passed in using {{ secrets.GITHUB_TOKEN }}'
-    default: '${{ secrets.GITHUB_TOKEN }}'
+    required: true
   config-path:
     description: 'Path to the config file'
     default: '.github/triage_bot_config.json'
