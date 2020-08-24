@@ -9,5 +9,3 @@ jobs:
     steps:
     - name: Create comment
       uses: ./dist/
-      with:
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
