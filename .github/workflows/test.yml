@@ -7,5 +7,6 @@ jobs:
     runs-on: ubuntu-latest
     name: To check template usage
     steps:
+    - uses: actions/checkout@v2
     - name: Create comment
       uses: ./dist/
