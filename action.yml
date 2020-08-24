@@ -2,10 +2,12 @@ name: 'Triaging'
 description: "GitHub action analysing new issue for correct template usage."
 author: "Arhia"
 inputs:
-  template-identifier: # change this
+  repo-token:
+    description: 'Token for the repository. Can be passed in using {{ secrets.GITHUB_TOKEN }}'
     required: true
-    description: 'define identifier to be find in issue body'
-    default: 'GENERATED_BY_TEMPLATE'
+  config-path:
+    description: 'Path to the config file'
+    default: '.github/triage_bot_config.json'
 runs:
   using: 'node14'
   main: 'dist/index.js'
