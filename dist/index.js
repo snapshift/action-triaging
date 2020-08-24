@@ -1494,9 +1494,9 @@ function run() {
                 core.error('No issue context found. This action can only run on issue creation.');
                 return;
             }
+            core.info(`Issue content ${JSON.stringify(issue)}`);
             core.info(`Loading config file at ${args.configPath}`);
             const config = yield getConfig(client, args.configPath);
-            core.debug(JSON.stringify(config));
             yield processIssue({ client, config, issueId: issue.number });
         }
         catch (error) {
@@ -1509,17 +1509,11 @@ function processIssue({ client, config, issueId }) {
     return __awaiter(this, void 0, void 0, function* () {
         const issue = yield getIssue(client, issueId);
         if (issue.labels.length > 0) {
-            core.debug('This issue already has labels, writing comment to warn');
+            core.info('This issue already has labels, stopping.');
             return;
         }
-        core.debug(`Contenu de body ${issue.body}`);
         const matchingLabels = [];
         const comments = config.comment ? [config.comment] : [];
-        if (!issue.body) {
-            core.debug(`Issue without body, stopping.`);
-            yield writeComment(client, issue.number, `Merci de renseigner le contenu du ticket.`);
-            return;
-        }
         for (const label of config.labels) {
             if (minimatch_1.default(issue.body, label.glob)) {
                 matchingLabels.push(label.label);
