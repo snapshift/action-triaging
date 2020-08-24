@@ -5,8 +5,8 @@ on:
 jobs:
   triaging:
     runs-on: ubuntu-latest
-    name: To check template usage
+    name: Check template usage
     steps:
     - uses: actions/checkout@v2
     - name: Create comment
-      uses: ./dist/
+      uses: ./
