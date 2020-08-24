@@ -1486,15 +1486,12 @@ function run() {
             const args = getAndValidateArgs();
             core.info('Starting GitHub Client');
             const client = github.getOctokit(args.repoToken);
-            // Get the JSON webhook payload for the event that triggered the workflow
-            const payload = JSON.stringify(github.context.payload, undefined, 2);
-            core.debug(`The event payload: ${payload}`);
             const issue = github.context.payload.issue;
             if (!issue) {
                 core.error('No issue context found. This action can only run on issue creation.');
                 return;
             }
-            core.info(`Issue content ${JSON.stringify(issue)}`);
+            core.debug(`Issue content ${JSON.stringify(issue)}`);
             core.info(`Loading config file at ${args.configPath}`);
             const config = yield getConfig(client, args.configPath);
             yield processIssue({ client, config, issueId: issue.number });
@@ -1508,10 +1505,6 @@ function run() {
 function processIssue({ client, config, issueId }) {
     return __awaiter(this, void 0, void 0, function* () {
         const issue = yield getIssue(client, issueId);
-        if (issue.labels.length > 0) {
-            core.info('This issue already has labels, stopping.');
-            return;
-        }
         const matchingLabels = [];
         const comments = config.comment ? [config.comment] : [];
         for (const label of config.labels) {
