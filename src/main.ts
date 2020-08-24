@@ -62,7 +62,6 @@ async function processIssue({
 
   if (issue.labels.length > 0) {
     core.debug('This issue already has labels, writing comment to warn')
-    await writeComment(client, issue.number, `Merci de renseigner le contenu du ticket.`)
     return
   }
 
@@ -71,11 +70,12 @@ async function processIssue({
 
   if (!issue.body) {
     core.debug(`Issue without body, stopping.`)
+    await writeComment(client, issue.number, `Merci de renseigner le contenu du ticket.`)
     return
   }
-  const lines = issue.body.split(/\r?\n|\r/g)
+
   for (const label of config.labels) {
-    if (minimatch(lines, label.glob)) {
+    if (minimatch(issue.body, label.glob)) {
       matchingLabels.push(label.label)
       if (label.comment) {
         comments.push(label.comment)
