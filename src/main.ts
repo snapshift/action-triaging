@@ -4,7 +4,6 @@ import { GitHub } from '@actions/github/lib/utils'
 import minimatch from 'minimatch'
 
 type GithubClient = InstanceType<typeof GitHub>
-type GithubIssue = any
 
 type Args = {
   repoToken: string
@@ -36,11 +35,10 @@ async function run(): Promise<void> {
       core.error('No issue context found. This action can only run on issue creation.')
       return
     }
+    core.info(`Issue content ${JSON.stringify(issue)}`)
 
     core.info(`Loading config file at ${args.configPath}`)
     const config = await getConfig(client, args.configPath)
-
-    core.debug(JSON.stringify(config))
 
     await processIssue({ client, config, issueId: issue.number })
   } catch (error) {
@@ -61,11 +59,9 @@ async function processIssue({
   const issue = await getIssue(client, issueId)
 
   if (issue.labels.length > 0) {
-    core.debug('This issue already has labels, writing comment to warn')
+    core.info('This issue already has labels, stopping.')
     return
   }
-
-  core.debug(`Contenu de body ${issue.body}`)
 
   const matchingLabels: string[] = []
   const comments: string[] = config.comment ? [config.comment] : []
