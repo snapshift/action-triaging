@@ -1460,7 +1460,7 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
     __setModuleDefault(result, mod);
     return result;
 };
@@ -1509,14 +1509,19 @@ function processIssue({ client, config, issueId }) {
     return __awaiter(this, void 0, void 0, function* () {
         const issue = yield getIssue(client, issueId);
         if (issue.labels.length > 0) {
-            core.debug('This issue already has labels, skipping...');
+            core.debug('This issue already has labels, writing comment to warn');
             return;
         }
+        core.debug(`Contenu de body ${issue.body}`);
         const matchingLabels = [];
         const comments = config.comment ? [config.comment] : [];
-        const lines = issue.body.split(/\r?\n|\r/g);
+        if (!issue.body) {
+            core.debug(`Issue without body, stopping.`);
+            yield writeComment(client, issue.number, `Merci de renseigner le contenu du ticket.`);
+            return;
+        }
         for (const label of config.labels) {
-            if (minimatch_1.default(lines, label.glob)) {
+            if (minimatch_1.default(issue.body, label.glob)) {
                 matchingLabels.push(label.label);
                 if (label.comment) {
                     comments.push(label.comment);

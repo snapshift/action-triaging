@@ -65,6 +65,8 @@ async function processIssue({
     return
   }
 
+  core.debug(`Contenu de body ${issue.body}`)
+
   const matchingLabels: string[] = []
   const comments: string[] = config.comment ? [config.comment] : []
 
