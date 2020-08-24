@@ -9,5 +9,5 @@ inputs:
     description: 'Path to the config file'
     default: '.github/triage_bot_config.json'
 runs:
-  using: 'node14'
+  using: 'node12'
   main: 'dist/index.js'
