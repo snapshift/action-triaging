@@ -1,0 +1,10 @@
+on:
+  issues:
+    types: [opened]
+jobs:
+  triaging:
+    runs-on: ubuntu-latest
+    name: To check template usage
+    steps:
+    - name: Create comment
+      uses: ./dist/
