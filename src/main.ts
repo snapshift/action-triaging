@@ -1,13 +1,143 @@
 import * as core from '@actions/core'
+import * as github from '@actions/github'
+import { GitHub } from '@actions/github/lib/utils'
+import minimatch from 'minimatch'
+
+type GithubClient = InstanceType<typeof GitHub>
+type GithubIssue = any
+
+type Args = {
+  repoToken: string
+  configPath: string
+}
+
+type TriageBotConfig = {
+  labels: {
+    label: string
+    glob: string
+    comment?: string
+  }[]
+  comment?: string
+  no_label_comment?: string
+}
 
 async function run(): Promise<void> {
   try {
-    core.debug(new Date().toTimeString())
+    const args = getAndValidateArgs()
+    core.info('Starting GitHub Client')
+    const client = github.getOctokit(args.repoToken)
 
-    core.setOutput('time', new Date().toTimeString())
+    // Get the JSON webhook payload for the event that triggered the workflow
+    const payload = JSON.stringify(github.context.payload, undefined, 2)
+    core.debug(`The event payload: ${payload}`)
+
+    const issue = github.context.payload.issue
+    if (!issue) {
+      core.error('No issue context found. This action can only run on issue creation.')
+      return
+    }
+
+    core.info(`Loading config file at ${args.configPath}`)
+    const config = await getConfig(client, args.configPath)
+
+    core.debug(JSON.stringify(config))
+
+    await processIssue({ client, config, issueId: issue.number })
   } catch (error) {
+    core.error(error)
     core.setFailed(error.message)
   }
+}
+
+async function processIssue({
+  client,
+  config,
+  issueId
+}: {
+  client: GithubClient
+  config: TriageBotConfig
+  issueId: number
+}): Promise<void> {
+  const issue = await getIssue(client, issueId)
+
+  if (issue.labels.length > 0) {
+    core.debug('This issue already has labels, skipping...')
+    return
+  }
+
+  const matchingLabels: string[] = []
+  const comments: string[] = config.comment ? [config.comment] : []
+  const lines = issue.body.split(/\r?\n|\r/g)
+  for (const label of config.labels) {
+    if (minimatch(lines, label.glob)) {
+      matchingLabels.push(label.label)
+      if (label.comment) {
+        comments.push(label.comment)
+      }
+    }
+  }
+
+  if (matchingLabels.length > 0) {
+    core.debug(`Adding labels ${matchingLabels.join(', ')} to issue #${issue.number}`)
+
+    await addLabels(client, issue.number, matchingLabels)
+
+    if (comments.length) {
+      await writeComment(client, issue.number, comments.join('\n\n'))
+    }
+  } else if (config.no_label_comment) {
+    core.debug(`Adding comment to issue #${issue.number}, because no labels match`)
+
+    await writeComment(client, issue.number, config.no_label_comment)
+  }
+}
+
+async function writeComment(client: GithubClient, issueId: number, body: string): Promise<void> {
+  await client.issues.createComment({
+    owner: github.context.repo.owner,
+    repo: github.context.repo.repo,
+    issue_number: issueId,
+    body
+  })
+}
+
+async function addLabels(client: GithubClient, issueId: number, labels: string[]): Promise<void> {
+  await client.issues.addLabels({
+    owner: github.context.repo.owner,
+    repo: github.context.repo.repo,
+    issue_number: issueId,
+    labels
+  })
+}
+
+async function getIssue(client: GithubClient, issueId: number): Promise<GithubIssue> {
+  return (
+    await client.issues.get({
+      issue_number: issueId,
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo
+    })
+  ).data
+}
+
+async function getConfig(client: GithubClient, configPath: string): Promise<TriageBotConfig> {
+  const response = await client.repos.getContent({
+    owner: github.context.repo.owner,
+    repo: github.context.repo.repo,
+    path: configPath,
+    ref: github.context.sha
+  })
+
+  return JSON.parse(Buffer.from(response.data.content, 'base64').toString())
+}
+
+function getAndValidateArgs(): Args {
+  const args = {
+    repoToken: core.getInput('repo-token', { required: true }),
+    configPath: core.getInput('config-path', { required: true })
+  }
+
+  return args
 }
 
 run()
