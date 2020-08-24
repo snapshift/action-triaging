@@ -1,11 +1,11 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Triaging'
+description: "GitHub action analysing new issue for correct template usage."
+author: "Arhia"
 inputs:
-  milliseconds: # change this
+  template-identifier: # change this
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    description: 'define identifier to be find in issue body'
+    default: 'GENERATED_BY_TEMPLATE'
 runs:
-  using: 'node12'
+  using: 'node14'
   main: 'dist/index.js'
