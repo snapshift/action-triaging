@@ -116,7 +116,7 @@ async function addLabels(client: GithubClient, issueId: number, labels: string[]
   })
 }
 
-async function getIssue(client: GithubClient, issueId: number): Promise<GithubIssue> {
+async function getIssue(client: GithubClient, issueId: number) {
   return (
     await client.issues.get({
       issue_number: issueId,

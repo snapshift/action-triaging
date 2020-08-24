@@ -30,7 +30,7 @@
     "camelcase": "off",
     "@typescript-eslint/consistent-type-assertions": "error",
     "@typescript-eslint/explicit-function-return-type": [
-      "error",
+      "off",
       {
         "allowExpressions": true
       }
