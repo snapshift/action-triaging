@@ -61,12 +61,18 @@ async function processIssue({
   const issue = await getIssue(client, issueId)
 
   if (issue.labels.length > 0) {
-    core.debug('This issue already has labels, skipping...')
+    core.debug('This issue already has labels, writing comment to warn')
+    await writeComment(client, issue.number, `Merci de renseigner le contenu du ticket.`)
     return
   }
 
   const matchingLabels: string[] = []
   const comments: string[] = config.comment ? [config.comment] : []
+
+  if (!issue.body) {
+    core.debug(`Issue without body, stopping.`)
+    return
+  }
   const lines = issue.body.split(/\r?\n|\r/g)
   for (const label of config.labels) {
     if (minimatch(lines, label.glob)) {
