@@ -26,16 +26,12 @@ async function run(): Promise<void> {
     core.info('Starting GitHub Client')
     const client = github.getOctokit(args.repoToken)
 
-    // Get the JSON webhook payload for the event that triggered the workflow
-    const payload = JSON.stringify(github.context.payload, undefined, 2)
-    core.debug(`The event payload: ${payload}`)
-
     const issue = github.context.payload.issue
     if (!issue) {
       core.error('No issue context found. This action can only run on issue creation.')
       return
     }
-    core.info(`Issue content ${JSON.stringify(issue)}`)
+    core.debug(`Issue content ${JSON.stringify(issue)}`)
 
     core.info(`Loading config file at ${args.configPath}`)
     const config = await getConfig(client, args.configPath)
@@ -57,11 +53,6 @@ async function processIssue({
   issueId: number
 }): Promise<void> {
   const issue = await getIssue(client, issueId)
-
-  if (issue.labels.length > 0) {
-    core.info('This issue already has labels, stopping.')
-    return
-  }
 
   const matchingLabels: string[] = []
   const comments: string[] = config.comment ? [config.comment] : []
