@@ -1,5 +1,5 @@
 name: 'Triaging'
-description: "GitHub action analysing new issue for correct template usage."
+description: "GitHub action analysing new issue body for adding labels and comment."
 author: "Arhia"
 inputs:
   repo-token:
