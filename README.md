@@ -18,7 +18,7 @@ jobs:
   stale:
     runs-on: ubuntu-latest
     steps:
-    - uses: Arhia/actrion-triaging@master
+    - uses: Arhia/actrion-triaging@main
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
 ```
