@@ -1,4 +1,3 @@
-import minimatch from 'minimatch'
 import { TriageBotConfig, processIssue } from '../src/main'
 
 test('1.', () => {

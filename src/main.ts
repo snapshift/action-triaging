@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { GitHub } from '@actions/github/lib/utils'
-import minimatch from 'minimatch'
+import * as micromatch from 'micromatch'
 type GithubClient = InstanceType<typeof GitHub>
 interface GithubIssue {
   body: string
@@ -91,10 +91,10 @@ export function processIssue({
     let isMatching: boolean
     if (isNegated) {
       // si on negate le patern, aucune ligne ne doit contenir le pattern
-      isMatching = !lines.some(l => minimatch(l, label.glob))
+      isMatching = !lines.some(l => micromatch.isMatch(l, label.glob))
     } else {
       // pattern normal, au mois 1 ligne doit contenir le pattern
-      isMatching = lines.some(l => minimatch(l, label.glob))
+      isMatching = lines.some(l => micromatch.isMatch(l, label.glob))
     }
 
     if (isMatching) {

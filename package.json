@@ -27,8 +27,8 @@
     "@actions/core": "1.2.4",
     "@actions/github": "4.0.0",
     "@octokit/rest": "18.0.3",
-    "@types/minimatch": "3.0.3",
-    "minimatch": "3.0.4"
+    "@types/micromatch": "^4.0.1",
+    "micromatch": "4.0.2"
   },
   "devDependencies": {
     "@types/jest": "26.0.10",
