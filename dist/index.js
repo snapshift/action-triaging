@@ -1491,10 +1491,10 @@ function run() {
                 core.error('No issue context found. This action can only run on issue creation.');
                 return;
             }
-            core.info(`Issue content from context : ${JSON.stringify(issue)}`);
+            core.info(`Issue body content from context : \n ${issue.body}`);
             core.info(`Loading config file at ${args.configPath}`);
             const config = yield getConfig(client, args.configPath);
-            yield processIssue({ client, config, issueId: issue.number });
+            yield processIssue({ client, config, issue });
         }
         catch (error) {
             core.error(error);
@@ -1502,10 +1502,8 @@ function run() {
         }
     });
 }
-function processIssue({ client, config, issueId }) {
+function processIssue({ client, config, issue }) {
     return __awaiter(this, void 0, void 0, function* () {
-        const issue = yield getIssue(client, issueId);
-        core.info(`Issue content from getIssue : ${JSON.stringify(issue)}`);
         const matchingLabels = [];
         const comments = config.comment ? [config.comment] : [];
         for (const label of config.labels) {
@@ -1515,6 +1513,9 @@ function processIssue({ client, config, issueId }) {
                 if (label.comment) {
                     comments.push(label.comment);
                 }
+            }
+            else {
+                core.info(`No match in body for pattern ${label.glob}`);
             }
         }
         if (matchingLabels.length > 0) {
@@ -1548,15 +1549,6 @@ function addLabels(client, issueId, labels) {
             issue_number: issueId,
             labels
         });
-    });
-}
-function getIssue(client, issueId) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return (yield client.issues.get({
-            issue_number: issueId,
-            owner: github.context.repo.owner,
-            repo: github.context.repo.repo
-        })).data;
     });
 }
 function getConfig(client, configPath) {

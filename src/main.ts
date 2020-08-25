@@ -2,8 +2,21 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { GitHub } from '@actions/github/lib/utils'
 import minimatch from 'minimatch'
-
 type GithubClient = InstanceType<typeof GitHub>
+interface GithubIssue {
+  body: string
+  number: number
+  active_lock_reason: string | null
+  assignee: string | null
+  assignees: string[]
+  author_association: string
+  closed_at: string | null
+  created_at: string | null
+  comments: number
+  id: number
+  title: string
+  labels: string[]
+}
 
 type Args = {
   repoToken: string
@@ -26,17 +39,17 @@ async function run(): Promise<void> {
     core.info('Starting GitHub Client')
     const client = github.getOctokit(args.repoToken)
 
-    const issue = github.context.payload.issue
+    const issue = (github.context.payload.issue as unknown) as GithubIssue
     if (!issue) {
       core.error('No issue context found. This action can only run on issue creation.')
       return
     }
-    core.info(`Issue content from context : ${JSON.stringify(issue)}`)
+    core.info(`Issue body content from context : \n ${issue.body}`)
 
     core.info(`Loading config file at ${args.configPath}`)
     const config = await getConfig(client, args.configPath)
 
-    await processIssue({ client, config, issueId: issue.number })
+    await processIssue({ client, config, issue })
   } catch (error) {
     core.error(error)
     core.setFailed(error.message)
@@ -46,16 +59,12 @@ async function run(): Promise<void> {
 async function processIssue({
   client,
   config,
-  issueId
+  issue
 }: {
   client: GithubClient
   config: TriageBotConfig
-  issueId: number
+  issue: GithubIssue
 }): Promise<void> {
-  const issue = await getIssue(client, issueId)
-
-  core.info(`Issue content from getIssue : ${JSON.stringify(issue)}`)
-
   const matchingLabels: string[] = []
   const comments: string[] = config.comment ? [config.comment] : []
 
@@ -66,6 +75,8 @@ async function processIssue({
       if (label.comment) {
         comments.push(label.comment)
       }
+    } else {
+      core.info(`No match in body for pattern ${label.glob}`)
     }
   }
 
@@ -100,16 +111,6 @@ async function addLabels(client: GithubClient, issueId: number, labels: string[]
     issue_number: issueId,
     labels
   })
-}
-
-async function getIssue(client: GithubClient, issueId: number) {
-  return (
-    await client.issues.get({
-      issue_number: issueId,
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo
-    })
-  ).data
 }
 
 async function getConfig(client: GithubClient, configPath: string): Promise<TriageBotConfig> {
