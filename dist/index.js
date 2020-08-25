@@ -1676,7 +1676,7 @@ function run() {
                 core.error('No issue context found. This action can only run on issue creation.');
                 return;
             }
-            core.info(`Issue body content from context : \n ${issue.body}`);
+            core.debug(`Issue body content from context : \n ${issue.body}`);
             core.info(`Loading config file at ${args.configPath}`);
             const config = yield getConfig(client, args.configPath);
             const { matchingLabels, comments } = processIssue({ config, issue });
@@ -1714,14 +1714,14 @@ function processIssue({ config, issue }) {
             isMatching = lines.some(l => micromatch.isMatch(l, label.glob));
         }
         if (isMatching) {
-            core.info(`Match in body for pattern ${label.glob}`);
+            core.debug(`Match in body for pattern ${label.glob}`);
             matchingLabels.push(label.label);
             if (label.comment) {
                 comments.push(label.comment);
             }
         }
         else {
-            core.info(`No match in body for pattern ${label.glob}`);
+            core.debug(`No match in body for pattern ${label.glob}`);
         }
     }
     return {

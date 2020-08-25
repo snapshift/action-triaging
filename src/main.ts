@@ -45,7 +45,7 @@ async function run(): Promise<void> {
       core.error('No issue context found. This action can only run on issue creation.')
       return
     }
-    core.info(`Issue body content from context : \n ${issue.body}`)
+    core.debug(`Issue body content from context : \n ${issue.body}`)
 
     core.info(`Loading config file at ${args.configPath}`)
     const config = await getConfig(client, args.configPath)
@@ -98,13 +98,13 @@ export function processIssue({
     }
 
     if (isMatching) {
-      core.info(`Match in body for pattern ${label.glob}`)
+      core.debug(`Match in body for pattern ${label.glob}`)
       matchingLabels.push(label.label)
       if (label.comment) {
         comments.push(label.comment)
       }
     } else {
-      core.info(`No match in body for pattern ${label.glob}`)
+      core.debug(`No match in body for pattern ${label.glob}`)
     }
   }
   return {
