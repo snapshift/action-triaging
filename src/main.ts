@@ -31,7 +31,7 @@ async function run(): Promise<void> {
       core.error('No issue context found. This action can only run on issue creation.')
       return
     }
-    core.debug(`Issue content ${JSON.stringify(issue)}`)
+    core.info(`Issue content from context : ${JSON.stringify(issue)}`)
 
     core.info(`Loading config file at ${args.configPath}`)
     const config = await getConfig(client, args.configPath)
@@ -54,11 +54,14 @@ async function processIssue({
 }): Promise<void> {
   const issue = await getIssue(client, issueId)
 
+  core.info(`Issue content from getIssue : ${JSON.stringify(issue)}`)
+
   const matchingLabels: string[] = []
   const comments: string[] = config.comment ? [config.comment] : []
 
   for (const label of config.labels) {
     if (minimatch(issue.body, label.glob)) {
+      core.info(`Match in body for pattern ${label.glob}`)
       matchingLabels.push(label.label)
       if (label.comment) {
         comments.push(label.comment)
@@ -67,7 +70,7 @@ async function processIssue({
   }
 
   if (matchingLabels.length > 0) {
-    core.debug(`Adding labels ${matchingLabels.join(', ')} to issue #${issue.number}`)
+    core.info(`Adding labels ${matchingLabels.join(', ')} to issue #${issue.number}`)
 
     await addLabels(client, issue.number, matchingLabels)
 
@@ -75,7 +78,7 @@ async function processIssue({
       await writeComment(client, issue.number, comments.join('\n\n'))
     }
   } else if (config.no_label_comment) {
-    core.debug(`Adding comment to issue #${issue.number}, because no labels match`)
+    core.info(`Adding comment to issue #${issue.number}, because no labels match`)
 
     await writeComment(client, issue.number, config.no_label_comment)
   }

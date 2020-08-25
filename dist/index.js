@@ -1491,7 +1491,7 @@ function run() {
                 core.error('No issue context found. This action can only run on issue creation.');
                 return;
             }
-            core.debug(`Issue content ${JSON.stringify(issue)}`);
+            core.info(`Issue content from context : ${JSON.stringify(issue)}`);
             core.info(`Loading config file at ${args.configPath}`);
             const config = yield getConfig(client, args.configPath);
             yield processIssue({ client, config, issueId: issue.number });
@@ -1505,10 +1505,12 @@ function run() {
 function processIssue({ client, config, issueId }) {
     return __awaiter(this, void 0, void 0, function* () {
         const issue = yield getIssue(client, issueId);
+        core.info(`Issue content from getIssue : ${JSON.stringify(issue)}`);
         const matchingLabels = [];
         const comments = config.comment ? [config.comment] : [];
         for (const label of config.labels) {
             if (minimatch_1.default(issue.body, label.glob)) {
+                core.info(`Match in body for pattern ${label.glob}`);
                 matchingLabels.push(label.label);
                 if (label.comment) {
                     comments.push(label.comment);
@@ -1516,14 +1518,14 @@ function processIssue({ client, config, issueId }) {
             }
         }
         if (matchingLabels.length > 0) {
-            core.debug(`Adding labels ${matchingLabels.join(', ')} to issue #${issue.number}`);
+            core.info(`Adding labels ${matchingLabels.join(', ')} to issue #${issue.number}`);
             yield addLabels(client, issue.number, matchingLabels);
             if (comments.length) {
                 yield writeComment(client, issue.number, comments.join('\n\n'));
             }
         }
         else if (config.no_label_comment) {
-            core.debug(`Adding comment to issue #${issue.number}, because no labels match`);
+            core.info(`Adding comment to issue #${issue.number}, because no labels match`);
             yield writeComment(client, issue.number, config.no_label_comment);
         }
     });
