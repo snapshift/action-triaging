@@ -23,11 +23,12 @@ type Args = {
   configPath: string
 }
 
-type TriageBotConfig = {
+export type TriageBotConfig = {
   labels: {
     label: string
     glob: string
     comment?: string
+    negate?: boolean
   }[]
   comment?: string
   no_label_comment?: string
@@ -49,27 +50,54 @@ async function run(): Promise<void> {
     core.info(`Loading config file at ${args.configPath}`)
     const config = await getConfig(client, args.configPath)
 
-    await processIssue({ client, config, issue })
+    const { matchingLabels, comments } = processIssue({ config, issue })
+
+    if (matchingLabels.length > 0) {
+      core.info(`Adding labels ${matchingLabels.join(', ')} to issue #${issue.number}`)
+
+      await addLabels(client, issue.number, matchingLabels)
+
+      if (comments.length) {
+        await writeComment(client, issue.number, comments.join('\n\n'))
+      }
+    } else if (config.no_label_comment) {
+      core.info(`Adding comment to issue #${issue.number}, because no labels match`)
+
+      await writeComment(client, issue.number, config.no_label_comment)
+    }
   } catch (error) {
     core.error(error)
     core.setFailed(error.message)
   }
 }
 
-async function processIssue({
-  client,
+export function processIssue({
   config,
   issue
 }: {
-  client: GithubClient
   config: TriageBotConfig
-  issue: GithubIssue
-}): Promise<void> {
+  issue: { body: string }
+}): {
+  matchingLabels: string[]
+  comments: string[]
+} {
   const matchingLabels: string[] = []
   const comments: string[] = config.comment ? [config.comment] : []
 
+  const lines = issue.body.split(/\r?\n|\r/g)
+
   for (const label of config.labels) {
-    if (minimatch(issue.body, label.glob)) {
+    const isNegated = label.negate === true
+    let isMatching: boolean
+    if (isNegated) {
+      // si on negate le patern, aucune ligne ne doit contenir le pattern
+      isMatching = !lines.some(l => minimatch(l, label.glob))
+    } else {
+      // pattern normal, au mois 1 ligne doit contenir le pattern
+      isMatching = lines.some(l => minimatch(l, label.glob))
+    }
+
+    if (isMatching) {
       core.info(`Match in body for pattern ${label.glob}`)
       matchingLabels.push(label.label)
       if (label.comment) {
@@ -79,19 +107,9 @@ async function processIssue({
       core.info(`No match in body for pattern ${label.glob}`)
     }
   }
-
-  if (matchingLabels.length > 0) {
-    core.info(`Adding labels ${matchingLabels.join(', ')} to issue #${issue.number}`)
-
-    await addLabels(client, issue.number, matchingLabels)
-
-    if (comments.length) {
-      await writeComment(client, issue.number, comments.join('\n\n'))
-    }
-  } else if (config.no_label_comment) {
-    core.info(`Adding comment to issue #${issue.number}, because no labels match`)
-
-    await writeComment(client, issue.number, config.no_label_comment)
+  return {
+    matchingLabels,
+    comments
   }
 }
 

@@ -1477,6 +1477,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.processIssue = void 0;
 const core = __importStar(__webpack_require__(186));
 const github = __importStar(__webpack_require__(438));
 const minimatch_1 = __importDefault(__webpack_require__(973));
@@ -1494,7 +1495,18 @@ function run() {
             core.info(`Issue body content from context : \n ${issue.body}`);
             core.info(`Loading config file at ${args.configPath}`);
             const config = yield getConfig(client, args.configPath);
-            yield processIssue({ client, config, issue });
+            const { matchingLabels, comments } = processIssue({ config, issue });
+            if (matchingLabels.length > 0) {
+                core.info(`Adding labels ${matchingLabels.join(', ')} to issue #${issue.number}`);
+                yield addLabels(client, issue.number, matchingLabels);
+                if (comments.length) {
+                    yield writeComment(client, issue.number, comments.join('\n\n'));
+                }
+            }
+            else if (config.no_label_comment) {
+                core.info(`Adding comment to issue #${issue.number}, because no labels match`);
+                yield writeComment(client, issue.number, config.no_label_comment);
+            }
         }
         catch (error) {
             core.error(error);
@@ -1502,35 +1514,38 @@ function run() {
         }
     });
 }
-function processIssue({ client, config, issue }) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const matchingLabels = [];
-        const comments = config.comment ? [config.comment] : [];
-        for (const label of config.labels) {
-            if (minimatch_1.default(issue.body, label.glob)) {
-                core.info(`Match in body for pattern ${label.glob}`);
-                matchingLabels.push(label.label);
-                if (label.comment) {
-                    comments.push(label.comment);
-                }
-            }
-            else {
-                core.info(`No match in body for pattern ${label.glob}`);
+function processIssue({ config, issue }) {
+    const matchingLabels = [];
+    const comments = config.comment ? [config.comment] : [];
+    const lines = issue.body.split(/\r?\n|\r/g);
+    for (const label of config.labels) {
+        const isNegated = label.negate === true;
+        let isMatching;
+        if (isNegated) {
+            // si on negate le patern, aucune ligne ne doit contenir le pattern
+            isMatching = !lines.some(l => minimatch_1.default(l, label.glob));
+        }
+        else {
+            // pattern normal, au mois 1 ligne doit contenir le pattern
+            isMatching = lines.some(l => minimatch_1.default(l, label.glob));
+        }
+        if (isMatching) {
+            core.info(`Match in body for pattern ${label.glob}`);
+            matchingLabels.push(label.label);
+            if (label.comment) {
+                comments.push(label.comment);
             }
         }
-        if (matchingLabels.length > 0) {
-            core.info(`Adding labels ${matchingLabels.join(', ')} to issue #${issue.number}`);
-            yield addLabels(client, issue.number, matchingLabels);
-            if (comments.length) {
-                yield writeComment(client, issue.number, comments.join('\n\n'));
-            }
+        else {
+            core.info(`No match in body for pattern ${label.glob}`);
         }
-        else if (config.no_label_comment) {
-            core.info(`Adding comment to issue #${issue.number}, because no labels match`);
-            yield writeComment(client, issue.number, config.no_label_comment);
-        }
-    });
+    }
+    return {
+        matchingLabels,
+        comments
+    };
 }
+exports.processIssue = processIssue;
 function writeComment(client, issueId, body) {
     return __awaiter(this, void 0, void 0, function* () {
         yield client.issues.createComment({
